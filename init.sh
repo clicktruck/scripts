@@ -1,11 +1,10 @@
-#!/bin/bash -e
+#!/usr/bin/env bash -e
 
 main() {
   # @see https://github.com/hashicorp/packer/issues/2639
   /usr/bin/cloud-init status --wait
 
   # Manage software versions installed here
-  TZ=America/Los_Angeles
   AGE_VERSION=1.1.1
   ARGO_VERSION=3.5.5
   ARGOCD_VERSION=2.10.7
@@ -39,10 +38,13 @@ main() {
   VENDIR_VERSION=0.40.1
   YTT_VERSION=0.49.0
 
+  DEBIAN_FRONTEND=noninteractive
+
   # Place ourselves in a temporary directory; don't clutter user.home directory w/ downloaded artifacts
-  cd /tmp
+  cd /tmp || exit
 
   # Set timezone
+  TZ=America/Los_Angeles
   ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
   # Bring OS package management up-to-date
@@ -52,7 +54,7 @@ main() {
   # Install packages from APT
   apt install build-essential curl default-jre git golang-go gpg graphviz gzip httpie libnss3-tools jq openssl pv python3-pip python3-dev python3-venv ruby-dev snapd sudo tmux tree tzdata unzip wget -y
   apt install apt-transport-https ca-certificates gnupg lsb-release software-properties-common dirmngr vim -y
-  add-apt-repository ppa:cncf-buildpacks/pack-cli
+  add-apt-repository ppa:cncf-buildpacks/pack-cli -y
   apt install pack-cli -y
 
   # Install packages from Snap
@@ -176,7 +178,7 @@ main() {
   sudo mv terraform /usr/local/bin
 
   # Install Terraform-Docs
-  curl -Lo ./terraform-docs https://github.com/segmentio/terraform-docs/releases/download/v${TERRAFORM_DOCS_VERSION}/terraform-docs-v${TERRAFORM_DOCS_VERSION}-$(uname | tr '[:upper:]' '[:lower:]')-amd64
+  curl -Lo ./terraform-docs https://github.com/segmentio/terraform-docs/releases/download/v${TERRAFORM_DOCS_VERSION}/terraform-docs-v${TERRAFORM_DOCS_VERSION}-"$(uname | tr '[:upper:]' '[:lower:]')-amd64"
   chmod +x ./terraform-docs
   sudo mv terraform-docs /usr/local/bin
 
@@ -258,7 +260,7 @@ main() {
   sudo mv tkn /usr/local/bin
 
   # Install mkcert
-  git clone https://github.com/FiloSottile/mkcert && cd mkcert
+  git clone https://github.com/FiloSottile/mkcert && cd mkcert || exit
   go build -ldflags "-X main.Version=$(git describe --tags)"
   sudo mv mkcert /usr/local/bin
   cd ..
