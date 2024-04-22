@@ -27,8 +27,6 @@ AZ_REGION="West US 2"
 AZ_SUBSCRIPTION_ID="REPLACE_ME"
 AZ_TENANT_ID="REPLACE_ME"
 AZ_APP_NAME="$SERVICE_ACCOUNT_NAME"
-# Secret you select here must adhere to Azure's password policy
-AZ_CLIENT_SECRET="REPLACE_ME"
 # An existing resource group
 AZ_RESOURCE_GROUP="REPLACE_ME"
 AZ_STORAGE_ACCOUNT_NAME="REPLACE_ME"
@@ -98,8 +96,7 @@ case "$IAAS" in
       az account set -s $AZ_SUBSCRIPTION_ID
       az ad app create --display-name $AZ_APP_NAME
       AZ_APP_ID=$(az ad app list --display-name $AZ_APP_NAME | jq '.[0].appId' | tr -d '"')
-      az ad sp create-for-rbac --name $AZ_APP_ID --role="Contributor" --scopes="/subscriptions/$AZ_SUBSCRIPTION_ID/resourceGroups/$AZ_RESOURCE_GROUP"
-      az ad sp credential reset --name "$AZ_APP_ID" --password "${AZ_CLIENT_SECRET}"
+      az ad sp create-for-rbac --name $AZ_APP_ID --role="Contributor" --scopes="/subscriptions/$AZ_SUBSCRIPTION_ID/resourceGroups/$AZ_RESOURCE_GROUP" --json-auth
       AZ_CLIENT_ID=$(az ad sp list --display-name $AZ_APP_ID | jq '.[0].appId' | tr -d '"')
       # @see https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli
       az role assignment create --assignee "$AZ_CLIENT_ID" --role "Owner" --scope "/subscriptions/$AZ_SUBSCRIPTION_ID"

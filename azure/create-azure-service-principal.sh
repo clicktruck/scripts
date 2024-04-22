@@ -22,4 +22,4 @@ az account set -s $AZURE_SUBSCRIPTION_ID
 # The az CLI says --sdk-auth is deprecated but doesn't give a new option. This is required for the Github Action though.
 az ad sp create-for-rbac --name $AZURE_SP_NAME --role $AZURE_SP_ROLE \
     --scopes /subscriptions/${AZURE_SUBSCRIPTION_ID} \
-    --sdk-auth
+    --json-auth
