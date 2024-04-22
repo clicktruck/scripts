@@ -13,27 +13,27 @@ set -eo pipefail
 # Sets Github Secrets using environment variables
 
 set_azure_secrets() {
-  gh secret set AZURE_SUBSCRIPTION_ID --body "$AZURE_SUBSCRIPTION_ID"
-  gh secret set AZURE_CREDENTIALS --body "$AZURE_CREDENTIALS"
-  gh secret set AZURE_REGION --body "$AZURE_REGION"
-  gh secret set AZURE_AD_TENANT_ID --body "$AZURE_AD_TENANT_ID"
-  gh secret set AZURE_AD_CLIENT_ID --body "$AZURE_AD_CLIENT_ID"
-  gh secret set AZURE_AD_CLIENT_SECRET --body "$AZURE_AD_CLIENT_SECRET"
+  gh secret set AZURE_SUBSCRIPTION_ID --body "$AZURE_SUBSCRIPTION_ID" --repo "$OWNER/azure-actions"
+  gh secret set AZURE_CREDENTIALS --body "$AZURE_CREDENTIALS" --repo "$OWNER/azure-actions"
+  gh secret set AZURE_REGION --body "$AZURE_REGION" --repo "$OWNER/azure-actions"
+  gh secret set AZURE_AD_TENANT_ID --body "$AZURE_AD_TENANT_ID" --repo "$OWNER/azure-actions"
+  gh secret set AZURE_AD_CLIENT_ID --body "$AZURE_AD_CLIENT_ID" --repo "$OWNER/azure-actions"
+  gh secret set AZURE_AD_CLIENT_SECRET --body "$AZURE_AD_CLIENT_SECRET" --repo "$OWNER/azure-actions"
 }
 
 set_aws_secrets() {
-  gh secret set AWS_ACCESS_KEY_ID --body "$AWS_ACCESS_KEY_ID"
-  gh secret set AWS_SECRET_ACCESS_KEY --body "$AWS_SECRET_ACCESS_KEY"
+  gh secret set AWS_ACCESS_KEY_ID --body "$AWS_ACCESS_KEY_ID" --repo "$OWNER/aws-actions"
+  gh secret set AWS_SECRET_ACCESS_KEY --body "$AWS_SECRET_ACCESS_KEY" --repo "$OWNER/aws-actions"
   if [ x"${AWS_SESSION_TOKEN}" == "x" ]; then
     echo "Session token secret not set."
   else
-    gh secret set AWS_SESSION_TOKEN --body "$AWS_SESSION_TOKEN"
+    gh secret set AWS_SESSION_TOKEN --body "$AWS_SESSION_TOKEN" --repo "$OWNER/aws-actions"
   fi
 }
 
 set_google_secrets() {
-  gh secret set GOOGLE_PROJECT_ID --body "$GOOGLE_PROJECT_ID"
-  gh secret set GOOGLE_SERVICE_ACCOUNT_KEY --body "$GOOGLE_SERVICE_ACCOUNT_KEY"
+  gh secret set GOOGLE_PROJECT_ID --body "$GOOGLE_PROJECT_ID" --repo "$OWNER/google-actions"
+  gh secret set GOOGLE_SERVICE_ACCOUNT_KEY --body "$GOOGLE_SERVICE_ACCOUNT_KEY" --repo "$OWNER/google-actions"
 }
 
 set_oidc_credentials() {
@@ -41,9 +41,9 @@ set_oidc_credentials() {
     echo "Expected OIDC_AUTH_PROVIDER, OIDC_AUTH_CLIENT_ID, and OIDC_AUTH_CLIENT_SECRET environment variables to be set"
     exit 1
   fi
-  gh secret set OIDC_AUTH_PROVIDER --body "$OIDC_AUTH_PROVIDER"
-  gh secret set OIDC_AUTH_CLIENT_ID --body "$OIDC_AUTH_CLIENT_ID"
-  gh secret set OIDC_AUTH_CLIENT_SECRET --body "$OIDC_AUTH_CLIENT_SECRET"
+  gh secret set OIDC_AUTH_PROVIDER --body "$OIDC_AUTH_PROVIDER" --repo "$OWNER/$TARGET_CLOUD-actions"
+  gh secret set OIDC_AUTH_CLIENT_ID --body "$OIDC_AUTH_CLIENT_ID" --repo "$OWNER/$TARGET_CLOUD-actions"
+  gh secret set OIDC_AUTH_CLIENT_SECRET --body "$OIDC_AUTH_CLIENT_SECRET" --repo "$OWNER/$TARGET_CLOUD-actions"
 }
 
 set_tanzu_secrets() {
@@ -51,18 +51,23 @@ set_tanzu_secrets() {
     echo "Expected TANZU_NETWORK_USERNAME, TANZU_NETWORK_PASSWORD, and TANZU_NETWORK_API_TOKEN environment variables to be set"
     exit 1
   fi
-  gh secret set TANZU_NETWORK_API_TOKEN --body "$TANZU_NETWORK_API_TOKEN"
-  gh secret set TANZU_NETWORK_USERNAME --body "$TANZU_NETWORK_USERNAME"
-  gh secret set TANZU_NETWORK_PASSWORD --body "$TANZU_NETWORK_PASSWORD"
+  gh secret set TANZU_NETWORK_API_TOKEN --body "$TANZU_NETWORK_API_TOKEN" --repo "$OWNER/$TARGET_CLOUD-actions"
+  gh secret set TANZU_NETWORK_USERNAME --body "$TANZU_NETWORK_USERNAME" --repo "$OWNER/$TARGET_CLOUD-actions"
+  gh secret set TANZU_NETWORK_PASSWORD --body "$TANZU_NETWORK_PASSWORD" --repo "$OWNER/$TARGET_CLOUD-actions"
 }
 
 if [ -z "$1" ]; then
-  echo "Usage: ./gh-set-secrets.sh {target-cloud}"
+  echo "Usage: ./gh-set-secrets.sh {target-cloud} {owner} {option}"
+  echo "  parameters: {target-cloud} is one of [ aws, azure, google ], {owner} is the repository owner or an organization name, and {option} is one of [ --include-oidc-credentials, --include-tanzu-secrets ]"
+  echo "  required: {target-cloud}"
+  echo "  optional: {owner}, {option}"
+  echo "  defaults: {owner} defaults to 'clicktruck', {option} defaults to ''"
   exit 1
 fi
 
 TARGET_CLOUD="$1"
-OPTIONS="$2"
+OWNER="${2:-clicktruck}"
+OPTIONS="$3"
 
 case $TARGET_CLOUD in
 
