@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
 
 main() {
   # @see https://github.com/hashicorp/packer/issues/2639
