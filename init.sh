@@ -312,17 +312,6 @@ main() {
   rm -Rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
   apt clean
 
-  cd /home/ubuntu
-
-  # Move Tanzu CLI into place (if it had been file provisioned)
-  if [ -e "/home/ubuntu/tanzu" ]; then
-    sudo mv /home/ubuntu/tanzu /usr/local/bin
-  fi
-
-  if [ -e "/home/ubuntu/tanzu-cli-bundle-linux-amd64.tar.gz" ]; then
-    tar xvf tanzu-cli-bundle-linux-amd64.tar.gz -C .
-  fi
-
 }
 
 main
