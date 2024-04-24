@@ -13,7 +13,7 @@ ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 apt update -y
 
 # Install packages from APT
-apt install apt-transport-https build-essential curl git software-properties-common sudo tmux unzip wget
+apt install apt-transport-https build-essential curl git software-properties-common sudo tmux unzip wget -y
 
 # Install Github CLI
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -79,15 +79,15 @@ chmod +x install.sh
 # Install VSCode
 wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add -
 sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
-sudo apt install code
+sudo apt install code -y
 
 # Install Tilt
 curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
 
 # Install Tanzu CLI
-sudo apt install -y ca-certificates gpg
+sudo apt install ca-certificates gpg -y
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://packages.vmware.com/tools/keys/VMWARE-PACKAGING-GPG-RSA-KEY.pub | sudo gpg --dearmor -o /etc/apt/keyrings/tanzu-archive-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/tanzu-archive-keyring.gpg] https://storage.googleapis.com/tanzu-cli-os-packages/apt tanzu-cli-jessie main" | sudo tee /etc/apt/sources.list.d/tanzu.list
 sudo apt update
-sudo apt install -y tanzu-cli
+sudo apt install tanzu-cli -y
