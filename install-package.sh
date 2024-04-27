@@ -57,6 +57,13 @@ if [ "x${KUBECONFIG}" == "x" ]; then
       else
         GITOPS_DIR=$GITHUB_WORKSPACE/$3
         YTT_PARENT_DIR=$GITHUB_WORKSPACE
+
+        GITOPS_TOP_DIR="${GITOPS_DIR%%/*}"
+        YTT_TOP_DIR="${YTT_PARENT_DIR%%/*}"
+
+        if [[ "$GITOPS_TOP_DIR" != "$YTT_TOP_DIR" ]]; then
+          YTT_PARENT_DIR="$GITOPS_TOP_DIR"
+        fi
       fi
 
       APP_NAME="${4}"
@@ -122,6 +129,13 @@ else
       else
         GITOPS_DIR=$GITHUB_WORKSPACE/$1
         YTT_PARENT_DIR=$GITHUB_WORKSPACE
+
+        GITOPS_TOP_DIR="${GITOPS_DIR%%/*}"
+        YTT_TOP_DIR="${YTT_PARENT_DIR%%/*}"
+
+        if [[ "$GITOPS_TOP_DIR" != "$YTT_TOP_DIR" ]]; then
+          YTT_PARENT_DIR="$GITOPS_TOP_DIR"
+        fi
       fi
 
       APP_NAME="${2}"
