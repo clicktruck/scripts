@@ -70,11 +70,8 @@ fi
 YAML_CONFIG_CONTENTS="$1"
 KUBECONFIG_CONTENTS="$2"
 
-if [ -z "$GITHUB_WORKSPACE" ]; then
-  GITOPS_DIR=../gitops/tanzu/application-platform/.init
-else
-  GITOPS_DIR=$GITHUB_WORKSPACE/gitops/tanzu/application-platform/.init
-fi
+GITOPS_DIR=$GITHUB_WORKSPACE/tanzu/application-platform/.init
+
 OBSERVED_CLUSTERS_BLOCK_CONTENTS=$GITOPS_DIR/observed-clusters-config.tpl
 
 mkdir -p /tmp/.kube

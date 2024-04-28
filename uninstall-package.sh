@@ -10,6 +10,63 @@ set -eo pipefail
 
 ## Do not change anything below unless you know what you're doing!
 
+# Delete applications and associated configurations
+delete_applications() {
+  local gitops_dir=$1
+  local app_name=$2
+  local ytt_parent_dir=$3
+
+  # Handle ancillary applications
+  handle_ancillary "$gitops_dir" "$app_name" "$ytt_parent_dir"
+
+  # Delete main app and RBAC
+  if [ -d "$gitops_dir/.init" ] && [ -d "$gitops_dir/.install" ]; then
+    kapp delete --app $app_name --diff-changes --yes
+    kapp delete --app $app_name-ns-rbac --diff-changes --yes
+  else
+    echo "Expected to find .init and .install directories."
+    exit 1
+  fi
+
+  # Handle pre-requisites
+  if [ -d "$gitops_dir/.prereq" ]; then
+    kubectl delete -f $gitops_dir/.prereq
+  fi
+}
+
+# Handle ancillary applications based on .post-install configurations
+handle_ancillary() {
+  local dir=$1
+  local app_name=$2
+  local working_dir=$3
+
+  if [ -d "$dir/.post-install" ]; then
+    local files=$(find "$dir/.post-install" -type f -name "*.yml" | wc -l)
+    if [ $files -eq 1 ]; then
+      local kind=$(yq e '.kind' $dir/.post-install/*.yml)
+      if [ "$kind" == "App" ]; then
+        local ytt_paths=( $(yq e '.spec.template.[].ytt.paths.[]' $dir/.post-install/*.yml) )
+        local i=0
+        for ytt_path in "${ytt_paths[@]}"
+        do
+          if [[ "$working_dir" == *"${ytt_path}"* ]]; then
+              local prefix = "${working_dir/$ytt_path/}"
+              local detected_path = "${GITHUB_WORKSPACE}/${prefix}/${ytt_path}"
+          else
+              local detected_path = "${GITHUB_WORKSPACE}/${ytt_path}"
+          fi
+          if [ -d "${detected_path}" ]; then
+              i=$((i+1))
+          fi
+        done
+        if [ $i -gt 0 ] && [ $i -eq ${#ytt_paths[@]} ]; then
+          kapp delete --app $app_name-ancillary --diff-changes --yes
+        fi
+      fi
+    fi
+  fi
+}
+
 if [ "x${KUBECONFIG}" == "x" ]; then
   echo "Workload cluster KUBECONFIG environment variable not set."
 
@@ -50,47 +107,11 @@ if [ "x${KUBECONFIG}" == "x" ]; then
       exit 1
 
     else
-      if [ -z "$GITHUB_WORKSPACE" ]; then
-        GITOPS_DIR=../"$3"
-        YTT_PARENT_DIR=".."
-      else
-        GITOPS_DIR=$GITHUB_WORKSPACE/$3
-        YTT_PARENT_DIR=$GITHUB_WORKSPACE
-      fi
-
+      GITOPS_DIR=$GITHUB_WORKSPACE/$3
       APP_NAME="${4}"
       cd ${GITOPS_DIR}
 
-      if [ -d "${GITOPS_DIR}/.post-install" ]; then
-        files=$(find ${GITOPS_DIR}/.post-install -type f -name "*.yml" | wc -l)
-        if [ $files -eq 1 ]; then
-          kind=$(yq -o=json '.kind' .post-install/*.yml | tr -d '"')
-          if [ "$kind" == "App" ]; then
-            ytt_paths=( $(yq -o=json '.spec.template.[].ytt.paths.[]' .post-install/*.yml | tr -d '"') )
-            ytt_path_count=${#ytt_paths[@]}
-            i=0
-            for ytt_path in "${ytt_paths[@]}"
-            do
-              if [ -d "${YTT_PARENT_DIR}/${ytt_path}" ]; then
-                  i=$((i+1))
-              fi
-            done
-            if [ $i -gt 0 ] && [ $i -eq $ytt_path_count ]; then
-              kapp delete --app $APP_NAME-ancillary --diff-changes --yes
-            fi
-          fi
-        fi
-      fi
-      if [ -d "${GITOPS_DIR}/.init" ] && [ -d "${GITOPS_DIR}/.install" ]; then
-        kapp delete --app $APP_NAME --diff-changes --yes
-        kapp delete --app $APP_NAME-ns-rbac --diff-changes --yes
-      else
-        echo "Expected to find .init and .install sub-directories underneath $GITOPS_DIR"
-        exit 1
-      fi
-      if [ -d "${GITOPS_DIR}/.prereq" ]; then
-        kubectl delete -f .prereq
-      fi
+      delete_applications "$GITOPS_DIR" "$APP_NAME" "$3"
     fi
   fi
 
@@ -107,47 +128,11 @@ else
       exit 1
 
     else
-      if [ -z "$GITHUB_WORKSPACE" ]; then
-        GITOPS_DIR=../"$1"
-        YTT_PARENT_DIR=".."
-      else
-        GITOPS_DIR=$GITHUB_WORKSPACE/$1
-        YTT_PARENT_DIR=$GITHUB_WORKSPACE
-      fi
-
+      GITOPS_DIR=$GITHUB_WORKSPACE/$1
       APP_NAME="${2}"
       cd ${GITOPS_DIR}
 
-      if [ -d "${GITOPS_DIR}/.post-install" ]; then
-        files=$(find ${GITOPS_DIR}/.post-install -type f -name "*.yml" | wc -l)
-        if [ $files -eq 1 ]; then
-          kind=$(yq -o=json '.kind' .post-install/*.yml | tr -d '"')
-          if [ "$kind" == "App" ]; then
-            ytt_paths=( $(yq -o=json '.spec.template.[].ytt.paths.[]' .post-install/*.yml | tr -d '"') )
-            ytt_path_count=${#ytt_paths[@]}
-            i=0
-            for ytt_path in "${ytt_paths[@]}"
-            do
-              if [ -d "${YTT_PARENT_DIR}/${ytt_path}" ]; then
-                  i=$((i+1))
-              fi
-            done
-            if [ $i -gt 0 ] && [ $i -eq $ytt_path_count ]; then
-              kapp delete --app $APP_NAME-ancillary --diff-changes --yes
-            fi
-          fi
-        fi
-      fi
-      if [ -d "${GITOPS_DIR}/.init" ] && [ -d "${GITOPS_DIR}/.install" ]; then
-        kapp delete --app $APP_NAME --diff-changes --yes
-        kapp delete --app $APP_NAME-ns-rbac --diff-changes --yes
-      else
-        echo "Expected to find .init and .install sub-directories underneath $GITOPS_DIR"
-        exit 1
-      fi
-      if [ -d "${GITOPS_DIR}/.prereq" ]; then
-        kubectl delete -f .prereq
-      fi
+      delete_applications "$GITOPS_DIR" "$APP_NAME" "$1"
     fi
   fi
 
