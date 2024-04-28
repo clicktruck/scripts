@@ -70,7 +70,7 @@ handle_post_install() {
                 local i=0
                 for ytt_path in "${ytt_paths[@]}"
                 do
-                    if [[ "$working_dir" == *"${ytt_path}"* ]]; then
+                    if [[ "$working_dir" =~ "$ytt_path" ]]; then
                         local prefix = "${working_dir/$ytt_path/}"
                         local detected_path = "${GITHUB_WORKSPACE}/${prefix}/${ytt_path}"
                     else
