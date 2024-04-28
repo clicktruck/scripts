@@ -59,28 +59,14 @@ deploy_app() {
 handle_post_install() {
     local dir="$1"
     local app_name="$2"
-    local working_dir="$3"
+
     if [ -d "${dir}/.post-install" ]; then
         local files=$(find ${dir}/.post-install -type f -name "*.yml" | wc -l)
         if [ $files -eq 1 ]; then
             local kind=$(yq -o=json '.kind' .post-install/*.yml | tr -d '"')
             if [ "$kind" == "App" ]; then
                 local ytt_paths=( $(yq -o=json '.spec.template.[].ytt.paths.[]' .post-install/*.yml | tr -d '"') )
-                local ytt_path_count=${#ytt_paths[@]}
-                local i=0
-                for ytt_path in "${ytt_paths[@]}"
-                do
-                    if [[ "$working_dir" =~ "$ytt_path" ]]; then
-                        local prefix = "${working_dir/$ytt_path/}"
-                        local detected_path = "${GITHUB_WORKSPACE}/${prefix}/${ytt_path}"
-                    else
-                        local detected_path = "${GITHUB_WORKSPACE}/${ytt_path}"
-                    fi
-                    if [ -d "${detected_path}" ]; then
-                        i=$((i+1))
-                    fi
-                done
-                if [ $i -gt 0 ] && [ $i -eq $ytt_path_count ]; then
+                if [ ${#ytt_paths[@]} -gt 0 ]; then
                     kapp deploy --app $app_name-ancillary --file .post-install --diff-changes --yes
                     local kicks=$(find ${dir}/.post-install -type f -name "kick.sh" | wc -l)
                     if [ $kicks -eq 1 ]; then
@@ -114,7 +100,7 @@ if [ "x${KUBECONFIG}" == "x" ]; then
     cd ${GITOPS_DIR}
     apply_directory ".prereq" "prerequisites"
     deploy_app "${GITOPS_DIR}" "${4}"
-    handle_post_install "${GITOPS_DIR}" "${4}" "${3}"
+    handle_post_install "${GITOPS_DIR}" "${4}"
     set +x
 else
     echo "Workload cluster KUBECONFIG environment variable was set."
@@ -126,6 +112,6 @@ else
     cd ${GITOPS_DIR}
     apply_directory ".prereq" "prerequisites"
     deploy_app "${GITOPS_DIR}" "${2}"
-    handle_post_install "${GITOPS_DIR}" "${2}" "${1}"
+    handle_post_install "${GITOPS_DIR}" "${2}"
     set +x
 fi

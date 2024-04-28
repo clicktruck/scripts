@@ -38,7 +38,6 @@ delete_applications() {
 handle_ancillary() {
   local dir=$1
   local app_name=$2
-  local working_dir=$3
 
   if [ -d "$dir/.post-install" ]; then
     local files=$(find "$dir/.post-install" -type f -name "*.yml" | wc -l)
@@ -46,20 +45,7 @@ handle_ancillary() {
       local kind=$(yq e '.kind' $dir/.post-install/*.yml)
       if [ "$kind" == "App" ]; then
         local ytt_paths=( $(yq e '.spec.template.[].ytt.paths.[]' $dir/.post-install/*.yml) )
-        local i=0
-        for ytt_path in "${ytt_paths[@]}"
-        do
-          if [[ "$working_dir" =~ "${ytt_path}" ]]; then
-              local prefix = "${working_dir/$ytt_path/}"
-              local detected_path = "${GITHUB_WORKSPACE}/${prefix}/${ytt_path}"
-          else
-              local detected_path = "${GITHUB_WORKSPACE}/${ytt_path}"
-          fi
-          if [ -d "${detected_path}" ]; then
-              i=$((i+1))
-          fi
-        done
-        if [ $i -gt 0 ] && [ $i -eq ${#ytt_paths[@]} ]; then
+        if [ ${#ytt_paths[@]} -gt 0 ]; then
           kapp delete --app $app_name-ancillary --diff-changes --yes
         fi
       fi
@@ -111,7 +97,7 @@ if [ "x${KUBECONFIG}" == "x" ]; then
       APP_NAME="${4}"
       cd ${GITOPS_DIR}
 
-      delete_applications "$GITOPS_DIR" "$APP_NAME" "$3"
+      delete_applications "$GITOPS_DIR" "$APP_NAME"
     fi
   fi
 
@@ -132,7 +118,7 @@ else
       APP_NAME="${2}"
       cd ${GITOPS_DIR}
 
-      delete_applications "$GITOPS_DIR" "$APP_NAME" "$1"
+      delete_applications "$GITOPS_DIR" "$APP_NAME"
     fi
   fi
 
