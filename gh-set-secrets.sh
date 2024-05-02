@@ -56,6 +56,15 @@ set_tanzu_secrets() {
   gh secret set TANZU_NETWORK_PASSWORD --body "$TANZU_NETWORK_PASSWORD" --repo "$OWNER/$TARGET_CLOUD-actions"
 }
 
+set_route53_static_credentials() {
+  if [ "x${ROUTE53_ZONE_AWS_ACCESS_KEY_ID}" == "x" ] || [ "x${ROUTE53_ZONE_AWS_SECRET_ACCESS_KEY}" == "x" ]; then
+    echo "Expected ROUTE53_ZONE_AWS_ACCESS_KEY_ID and ROUTE53_ZONE_AWS_SECRET_ACCESS_KEY environment variables to be set"
+    exit 1
+  fi
+  gh secret set ROUTE53_AWS_ACCESS_KEY_ID --body "$ROUTE53_AWS_ACCESS_KEY_ID" --repo "$OWNER/aws-actions"
+  gh secret set ROUTE53_AWS_SECRET_ACCESS_KEY --body "$ROUTE53_AWS_SECRET_ACCESS_KEY" --repo "$OWNER/aws-actions"
+}
+
 if [ -z "$1" ]; then
   echo "Usage: ./gh-set-secrets.sh {target-cloud} {owner} {option}"
   echo "  parameters: {target-cloud} is one of [ aws, azure, google ], {owner} is the repository owner or an organization name, and {option} is one of [ --include-oidc-credentials, --include-tanzu-secrets ]"
@@ -106,5 +115,9 @@ if [ ! -z "$OPTIONS" ];then
 
   if [[ "--include-tanzu-secrets" =~ "$OPTIONS" ]]; then
     set_tanzu_secrets
+  fi
+
+  if [[ "--include-route53-static-credentials" ]]; then
+    set_route53_static_credentials
   fi
 fi
